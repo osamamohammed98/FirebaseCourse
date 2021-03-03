@@ -55,7 +55,7 @@
                     android:background="#48B1AFAF"
                     android:hint="User password "
                     android:imeOptions="actionNext"
-                    android:inputType="textEmailAddress"
+                    android:inputType="textPassword"
                     android:padding="10dp"
                     android:textColorHint="#B1AFAF" />
 

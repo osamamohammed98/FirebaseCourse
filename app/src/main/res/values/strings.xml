@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">FirebaseCourse</string>
+
+
+    <!--todo this for list item user-->
+    <string name="subtitle_subtitle_subtitle_subtitle">SubTitle SubTitle SubTitle SubTitle</string>
+    <!--todo this for list item user-->
 </resources>

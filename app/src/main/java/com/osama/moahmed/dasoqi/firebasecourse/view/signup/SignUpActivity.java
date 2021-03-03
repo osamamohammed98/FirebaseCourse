@@ -9,19 +9,14 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.databinding.DataBindingUtil;
 
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.UploadTask;
 import com.osama.moahmed.dasoqi.firebasecourse.R;
 import com.osama.moahmed.dasoqi.firebasecourse.databinding.ActivitySignUpBinding;
 import com.osama.moahmed.dasoqi.firebasecourse.util.AppSharedData;
@@ -70,76 +65,63 @@ public class SignUpActivity extends AppCompatActivity {
     }
 
     private void selectImage() {
-        binding.ivUserImage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                CropImage.activity()
-                        .setGuidelines(CropImageView.Guidelines.ON)
-                        .start(SignUpActivity.this);
-            }
-        });
+        binding.ivUserImage.setOnClickListener(v -> CropImage.activity()
+                .setGuidelines(CropImageView.Guidelines.ON)
+                .start(SignUpActivity.this));
     }
 
     private void onLoginClick() {
-        binding.tvLogin.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                onBackPressed();
-            }
-        });
+        binding.tvLogin.setOnClickListener(v -> onBackPressed());
     }
 
     private void onRegisterClick() {
 
 
-        binding.btnSignup.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+        binding.btnSignup.setOnClickListener(v -> {
 
-                setErrorNull(binding.etPassword, binding.etEmail, binding.etPhone, binding.etFullName);
+            setErrorNull(binding.etPassword, binding.etEmail, binding.etPhone, binding.etFullName);
 
-                if (AppSharedData.isEmptyEditText(binding.etFullName)) {
-                    AppSharedData.setErrorET(binding.etFullName, "this filed is required");
-                    return;
-                }
-
-                if (AppSharedData.isEmptyEditText(binding.etPhone)) {
-                    AppSharedData.setErrorET(binding.etPhone, "this filed is required");
-                    return;
-                }
-
-                if (AppSharedData.isEmptyEditText(binding.etEmail)) {
-                    AppSharedData.setErrorET(binding.etEmail, "this filed is required");
-                    return;
-                }
-
-                if (!AppSharedData.getTextFromET(binding.etEmail).contains("@")) {
-                    AppSharedData.setErrorET(binding.etEmail, "this email is not valid : example@example.com");
-                    return;
-                }
-
-                if (AppSharedData.isEmptyEditText(binding.etPassword)) {
-                    AppSharedData.setErrorET(binding.etPassword, "this filed is required");
-                    return;
-                }
-                if (AppSharedData.getTextFromET(binding.etPassword).length() < 8) {
-                    AppSharedData.setErrorET(binding.etPassword, "this password is not valid it must be more thane 8 character");
-                    return;
-                }
-
-                String email = AppSharedData.getTextFromET(binding.etEmail);
-                String password = AppSharedData.getTextFromET(binding.etPassword);
-                String fullName = AppSharedData.getTextFromET(binding.etFullName);
-                String phone = AppSharedData.getTextFromET(binding.etPhone);
-
-                if (imageUri == null) {
-                    register(email, password, fullName, phone);
-                } else {
-                    registerWithImage(email, password, fullName, phone, imageUri);
-                }
-
-
+            if (AppSharedData.isEmptyEditText(binding.etFullName)) {
+                AppSharedData.setErrorET(binding.etFullName, "this filed is required");
+                return;
             }
+
+            if (AppSharedData.isEmptyEditText(binding.etPhone)) {
+                AppSharedData.setErrorET(binding.etPhone, "this filed is required");
+                return;
+            }
+
+            if (AppSharedData.isEmptyEditText(binding.etEmail)) {
+                AppSharedData.setErrorET(binding.etEmail, "this filed is required");
+                return;
+            }
+
+            if (!AppSharedData.getTextFromET(binding.etEmail).contains("@")) {
+                AppSharedData.setErrorET(binding.etEmail, "this email is not valid : example@example.com");
+                return;
+            }
+
+            if (AppSharedData.isEmptyEditText(binding.etPassword)) {
+                AppSharedData.setErrorET(binding.etPassword, "this filed is required");
+                return;
+            }
+            if (AppSharedData.getTextFromET(binding.etPassword).length() < 8) {
+                AppSharedData.setErrorET(binding.etPassword, "this password is not valid it must be more thane 8 character");
+                return;
+            }
+
+            String email = AppSharedData.getTextFromET(binding.etEmail);
+            String password = AppSharedData.getTextFromET(binding.etPassword);
+            String fullName = AppSharedData.getTextFromET(binding.etFullName);
+            String phone = AppSharedData.getTextFromET(binding.etPhone);
+
+            if (imageUri == null) {
+                register(email, password, fullName, phone);
+            } else {
+                registerWithImage(email, password, fullName, phone, imageUri);
+            }
+
+
         });
 
 
@@ -149,20 +131,51 @@ public class SignUpActivity extends AppCompatActivity {
 
         try {
             dialog.show();
-            StorageReference storageReference = referenceUserImage.child(auth.getCurrentUser().getUid());
-            storageReference.child(imageUri.getLastPathSegment() + ".jpg").putFile(imageUri)
-                    .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
-                        @Override
-                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+            final StorageReference storageReference = referenceUserImage.child(auth.getCurrentUser().getUid()).child(imageUri.getLastPathSegment() + ".jpg");
+            storageReference.putFile(imageUri)
+                    .addOnSuccessListener(taskSnapshot -> storageReference.getDownloadUrl()
+                            .addOnSuccessListener(uri -> {
+                                final String imageUrl = uri.toString();
+                                auth.createUserWithEmailAndPassword(email, password)
+                                        .addOnSuccessListener(authResult -> {
+                                            dialog.show();
+                                            String userId = auth.getCurrentUser().getUid();
+                                            Map<String, Object> map = new HashMap<>();
+                                            map.put("userID", userId);
+                                            map.put("fullName", fullName);
+                                            map.put("phone", phone);
+                                            map.put("password", password);
+                                            map.put("email", email);
+                                            map.put("imageUrl", imageUrl);
+                                            databaseReferenceUserRoot.child(userId).setValue(map)
+                                                    .addOnSuccessListener(aVoid -> {
+                                                        startActivity(new Intent(getBaseContext(), HomeActivity.class));
+                                                        dialog.dismiss();
+                                                        finish();
+                                                    })
+                                                    .addOnFailureListener(e -> {
+                                                        Toast.makeText(SignUpActivity.this, "" + e.toString(), Toast.LENGTH_SHORT).show();
+                                                        dialog.dismiss();
+                                                        Log.d(TAG, "onFailure: " + e.toString());
+                                                    });
 
-                        }
-                    })
-                    .addOnFailureListener(new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception e) {
-                            dialog.dismiss();
-                            Log.d(TAG, "onFailure: " + e.toString());
-                        }
+
+                                        })
+                                        .addOnFailureListener(e -> {
+                                            Toast.makeText(SignUpActivity.this, "" + e.toString(), Toast.LENGTH_SHORT).show();
+                                            dialog.dismiss();
+                                            Log.d(TAG, "onFailure: " + e.toString());
+                                        });
+
+
+                            })
+                            .addOnFailureListener(e -> {
+                                dialog.dismiss();
+                                Log.d(TAG, "onFailure: " + e.toString());
+                            }))
+                    .addOnFailureListener(e -> {
+                        dialog.dismiss();
+                        Log.d(TAG, "onFailure: " + e.toString());
                     });
         } catch (Exception e) {
             e.printStackTrace();
@@ -177,45 +190,33 @@ public class SignUpActivity extends AppCompatActivity {
         try {
             dialog.show();
             auth.createUserWithEmailAndPassword(email, password)
-                    .addOnSuccessListener(new OnSuccessListener<AuthResult>() {
-                        @Override
-                        public void onSuccess(AuthResult authResult) {
-                            String userId = auth.getCurrentUser().getUid();
-                            //"User/userId/{}"
-                            Map<String, Object> map = new HashMap<>();
-                            map.put("userID", userId);
-                            map.put("fullName", fullName);
-                            map.put("phone", phone);
-                            map.put("password", password);
-                            map.put("email", email);
-                            databaseReferenceUserRoot.child(userId).setValue(map)
-                                    .addOnSuccessListener(new OnSuccessListener<Void>() {
-                                        @Override
-                                        public void onSuccess(Void aVoid) {
-                                            startActivity(new Intent(getBaseContext(), HomeActivity.class));
-                                            dialog.dismiss();
-                                            finish();
-                                        }
-                                    })
-                                    .addOnFailureListener(new OnFailureListener() {
-                                        @Override
-                                        public void onFailure(@NonNull Exception e) {
-                                            Toast.makeText(SignUpActivity.this, "" + e.toString(), Toast.LENGTH_SHORT).show();
-                                            dialog.dismiss();
-                                            Log.d(TAG, "onFailure: " + e.toString());
-                                        }
-                                    });
+                    .addOnSuccessListener(authResult -> {
+                        String userId = auth.getCurrentUser().getUid();
+                        //"User/userId/{}"
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("userID", userId);
+                        map.put("fullName", fullName);
+                        map.put("phone", phone);
+                        map.put("password", password);
+                        map.put("email", email);
+                        databaseReferenceUserRoot.child(userId).setValue(map)
+                                .addOnSuccessListener(aVoid -> {
+                                    startActivity(new Intent(getBaseContext(), HomeActivity.class));
+                                    dialog.dismiss();
+                                    finish();
+                                })
+                                .addOnFailureListener(e -> {
+                                    Toast.makeText(SignUpActivity.this, "" + e.toString(), Toast.LENGTH_SHORT).show();
+                                    dialog.dismiss();
+                                    Log.d(TAG, "onFailure: " + e.toString());
+                                });
 
 
-                        }
                     })
-                    .addOnFailureListener(new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception e) {
-                            Toast.makeText(SignUpActivity.this, "" + e.toString(), Toast.LENGTH_SHORT).show();
-                            dialog.dismiss();
-                            Log.d(TAG, "onFailure: " + e.toString());
-                        }
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(SignUpActivity.this, "" + e.toString(), Toast.LENGTH_SHORT).show();
+                        dialog.dismiss();
+                        Log.d(TAG, "onFailure: " + e.toString());
                     });
         } catch (Exception e) {
             e.printStackTrace();

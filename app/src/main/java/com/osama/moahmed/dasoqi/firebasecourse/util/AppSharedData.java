@@ -13,11 +13,18 @@ public class AppSharedData {
         return false;
     }
 
+    public static boolean isEmailMatcher(EditText editText) {
+        if(!android.util.Patterns.EMAIL_ADDRESS.matcher(editText.getText().toString()).matches()){
+            return  false;
+        }
+        return true;
+    }
+
     public static String getTextFromET(EditText editText) {
         return editText.getText().toString();
     }
 
-    public static void setErrorET(EditText editText , String error) {
-         editText.setError(error);
+    public static void setErrorET(EditText editText, String error) {
+        editText.setError(error);
     }
 }
